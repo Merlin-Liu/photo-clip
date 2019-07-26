@@ -1,7 +1,14 @@
 <template>
-    <view>
+    <view class="photo-clip">
+        <view class="photo-clip-main">
+            <view class="photo-clip-content"></view>
+            <image class="photo-clip-image" :src="imageSrc" mode="aspectFill"></image>
+        </view>
         <canvas
-            tyle="width: {{clipBoxWidth}}px; height: {{clipBoxHeight}}px;"
+            :style="{
+                width: `${clipBoxWidth}px`,
+                height: `${clipBoxHeight}px`
+            }"
             canvas-id="image-cropper"
         >
         </canvas>
@@ -10,27 +17,29 @@
 
 <script>
 export default {
-    data: () => ({
-        clipBoxWidth: this.initialClipBoxWidth,
-        clipBoxHeight: this.initialClipBoxHeight,
-        clipBoxTop: this.initialClipBoxTop,
-        clipBoxLeft: this.initialClipBoxLeft,
-        canvasContext: null,
-        canvasWidth: 200,
-        canvasHeight: 200,
-        systemInfo: uni.getSystemInfoSync()
-    }),
+    data () {
+        return {
+            clipBoxWidth: this.initialClipBoxWidth,
+            clipBoxHeight: this.initialClipBoxHeight,
+            clipBoxTop: this.initialClipBoxTop,
+            clipBoxLeft: this.initialClipBoxLeft,
+            canvasContext: null,
+            canvasWidth: 200,
+            canvasHeight: 200,
+            systemInfo: uni.getSystemInfoSync()
+        }
+    },
 
     props: {
         imageSrc: {
             type: String
         },
-        imageWidth: {
-            type: Number
-        },
-        imageHeight: {
-            type: Number
-        },
+        // imageWidth: {
+        //     type: Number
+        // },
+        // imageHeight: {
+        //     type: Number
+        // },
         initialClipBoxWidth: {
             type: Number,
             default: 200
@@ -107,4 +116,8 @@ export default {
 </script>
 
 <style>
+    image {
+        width: 100vw;
+        height: 40vh;
+    }
 </style>
