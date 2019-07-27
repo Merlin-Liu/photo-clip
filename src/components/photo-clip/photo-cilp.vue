@@ -1,8 +1,25 @@
 <template>
-    <view class="photo-clip">
-        <view class="photo-clip-main">
-            <view class="photo-clip-content"></view>
-            <image class="photo-clip-image" :src="imageSrc" mode="aspectFill"></image>
+    <view class="photo-cliper">
+        <view class="photo-cliper-main">
+            <view class="photo-cliper-content">
+                <view class="clip-box-top shallow-background"></view>
+                <view class="clip-box-wrap">
+                    <view class="clip-box-left shallow-background"></view>
+                    <view class="clip-box">
+                        <view class="clip-box-border border-top-left"></view>
+                        <view class="clip-box-border border-left-top"></view>
+                        <view class="clip-box-border border-top-right"></view>
+                        <view class="clip-box-border border-right-top"></view>
+                        <view class="clip-box-border border-left-bottom"></view>
+                        <view class="clip-box-border border-bottom-left"></view>
+                        <view class="clip-box-border border-right-bottom"></view>
+                        <view class="clip-box-border border-bottom-right"></view>
+                    </view>
+                    <view class="clip-box-right shallow-background"></view>
+                </view>
+                <view class="clip-box-bottom shallow-background"></view>
+            </view>
+            <image class="photo-cliper-image" :src="imageSrc" mode="aspectFill"></image>
         </view>
         <canvas
             :style="{
@@ -115,9 +132,123 @@ export default {
 }
 </script>
 
-<style>
-    image {
-        width: 100vw;
-        height: 40vh;
+<style lang="scss">
+.photo-cliper {
+    background:rgba(14, 13, 13, .8);
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+
+    .photo-cliper-main {
+        width: 100%;
+        height: 100%;
+
+        .photo-cliper-content {
+            display: flex;
+            flex-direction:column;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+
+            .clip-box-top {
+                width: 100%;
+                height: 100px;
+            }
+            
+            .clip-box-wrap {
+                display: flex;
+                width: 100%;
+                height: 200px;
+
+                .clip-box-left {
+                    width: 50px;
+                }
+                .clip-box {
+                    position: relative;
+                    width: 200px;
+                    border: 1px solid red;
+                }
+                .clip-box-right {
+                    flex: auto;
+                }
+            }
+
+            .clip-box-bottom {
+                flex: auto;
+            }
+        }
+
+        .photo-cliper-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 400px;
+            height: 400px;
+            z-index: -1;
+        }
     }
+}
+.clip-box-border {
+    position: absolute;
+    background:white;
+    pointer-events:auto;
+
+    &.border-top-left {
+        top: -5rpx;
+        left: -5rpx;
+        width: 33rpx;
+        height: 5rpx;
+    }
+    &.border-left-top {
+        top: -5rpx;
+        left: -5rpx;
+        width: 5rpx;
+        height: 33rpx;
+    }
+    &.border-top-right {
+        top: -5rpx;
+        right: -5rpx;
+        width: 33rpx;
+        height: 5rpx;
+    }
+    &.border-right-top {
+        top: -5rpx;
+        right: -5rpx;
+        width: 5rpx;
+        height: 33rpx;
+    }
+    &.border-bottom-left {
+        bottom: -5rpx;
+        left: -5rpx;
+        width: 33rpx;
+        height: 5rpx;
+    }
+    &.border-left-bottom {
+        bottom: -5rpx;
+        left: -5rpx;
+        width: 5rpx;
+        height: 33rpx;
+    }
+    &.border-bottom-right {
+        bottom: -5rpx;
+        right: -5rpx;
+        width: 33rpx;
+        height: 5rpx;
+    }
+    &.border-right-bottom {
+        bottom: -5rpx;
+        right: -5rpx;
+        width: 5rpx;
+        height: 33rpx;
+    }
+}
+.shallow-background {
+    background-color: rgba(0, 0, 0, 0.45);
+}
+.deep-background {
+    background-color: rgba(0, 0, 0, 0.8);
+}
 </style>
