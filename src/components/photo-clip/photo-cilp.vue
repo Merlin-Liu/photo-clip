@@ -1,6 +1,6 @@
 <template>
     <view class="photo-cliper">
-        <view class="photo-cliper-main">
+        <view class="photo-cliper-main" @touchstart="imageTouchStart" @touchmove="imageTouchMove">
             <view class="photo-cliper-content">
                 <view class="clip-box-top shallow-background" :style="{height: `${clipBoxTop}px`}"></view>
                 <view class="clip-box-wrap">
@@ -53,6 +53,10 @@ export default {
         return {
             imageWidth: 0,
             imageHeight: 0,
+            imageCenterPoint: {
+                x: uni.getSystemInfoSync().windowWidth / 2,
+                y: uni.getSystemInfoSync().windowHeight / 2
+            },
             clipBoxWidth: this.initialClipBoxWidth,
             clipBoxHeight: this.initialClipBoxHeight,
             clipBoxTop: this.initialClipBoxTop,
@@ -60,7 +64,11 @@ export default {
             canvasContext: null,
             canvasWidth: 200,
             canvasHeight: 200,
-            systemInfo: uni.getSystemInfoSync()
+            systemInfo: uni.getSystemInfoSync(),
+
+            imageTouchStartPosition: [
+                {x: 0, y: 0},
+            ]
         }
     },
 
@@ -100,15 +108,30 @@ export default {
             type: Number,
             default: 3
         },
+        // 限制图片只能在裁剪框内拖动
+        needLimitImageMoveRange: {
+            type: Boolean,
+            default: true
+        }
     },
 
     computed: {
-        imageTranslateX() {
-            return (this.systemInfo.windowWidth - this.imageWidth) / 2
+        imageTranslateX: {
+            get() {
+                return this.imageCenterPoint.x - (this.imageWidth / 2)
+            },
+            set(imageTranslateX) {
+                this.imageCenterPoint.x =  imageTranslateX  + (this.imageWidth / 2)
+            }
         },
 
-        imageTranslateY() {
-            return (this.systemInfo.windowHeight - this.imageHeight) / 2
+        imageTranslateY: {
+            get() {
+                return this.imageCenterPoint.y - (this.imageHeight / 2)
+            },
+            set(imageTranslateY) {
+                this.imageCenterPoint.y =  imageTranslateY  + (this.imageHeight / 2)
+            }
         }
     },
 
@@ -170,7 +193,36 @@ export default {
         imageTouchStart({touches}) {
             // 单指拖动
             if (touches.length === 1) {
+                const [{ clientX: x, clientY: y }] = touches
+                const { imageTranslateX: translateX, imageTranslateY: translateY } = this
 
+                this.imageTouchStartPosition = { x, y, translateX, translateY }
+            }
+            // 双指放大
+            else {
+
+            }
+        },
+
+        imageTouchMove({touches}) {
+            // 单指拖动
+            if (touches.length === 1) {
+                const [{ clientX, clientY }] = touches
+                const { x, y, translateX, translateY } = this.imageTouchStartPosition
+
+                const deltaX = clientX - x
+                const deltaY = clientY - y
+                let imageTranslateX = translateX + deltaX
+                let imageTranslateY = translateY + deltaY
+                
+                if (this.needLimitImageMoveRange) {
+                    const result = this.limitImageTranslate(imageTranslateX, imageTranslateY)
+                    imageTranslateX = result.imageTranslateX
+                    imageTranslateY = result.imageTranslateY
+                }
+
+                this.imageTranslateX = imageTranslateX
+                this.imageTranslateY = imageTranslateY
             }
             // 双指放大
             else {
@@ -183,6 +235,10 @@ export default {
         },
 
         canvasDraw() {
+        },
+
+        limitImageTranslate(translateX, translateY) {
+            
         }
     }
 }
