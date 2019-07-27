@@ -2,10 +2,16 @@
     <view class="photo-cliper">
         <view class="photo-cliper-main">
             <view class="photo-cliper-content">
-                <view class="clip-box-top shallow-background"></view>
+                <view class="clip-box-top shallow-background" :style="{height: `${clipBoxTop}px`}"></view>
                 <view class="clip-box-wrap">
-                    <view class="clip-box-left shallow-background"></view>
-                    <view class="clip-box">
+                    <view class="clip-box-left shallow-background" :style="{width: `${clipBoxLeft}px`}"></view>
+                    <view
+                        class="clip-box"
+                        :style="{
+                            width: `${clipBoxWidth}px`,
+                            height: `${clipBoxHeight}px`
+                        }"
+                    >
                         <view class="clip-box-border border-top-left"></view>
                         <view class="clip-box-border border-left-top"></view>
                         <view class="clip-box-border border-top-right"></view>
@@ -19,7 +25,16 @@
                 </view>
                 <view class="clip-box-bottom shallow-background"></view>
             </view>
-            <image class="photo-cliper-image" :src="imageSrc" mode="aspectFill"></image>
+            <image
+                class="photo-cliper-image"
+                mode="aspectFill"
+                :src="imageSrc"
+                :style="{
+                    width: `${imageWidth}px`,
+                    height: `${imageHeight}px`,
+                    transform: `translate3d(${imageTranslateX}px, ${imageTranslateY}px, 0)`
+                }"
+            ></image>
         </view>
         <canvas
             :style="{
@@ -36,6 +51,8 @@
 export default {
     data () {
         return {
+            imageWidth: 0,
+            imageHeight: 0,
             clipBoxWidth: this.initialClipBoxWidth,
             clipBoxHeight: this.initialClipBoxHeight,
             clipBoxTop: this.initialClipBoxTop,
@@ -59,11 +76,11 @@ export default {
         // },
         initialClipBoxWidth: {
             type: Number,
-            default: 200
+            default: 250
         },
         initialClipBoxHeight: {
             type: Number,
-            default: 200
+            default: 300
         },
         initialClipBoxTop: {
             type: Number,
@@ -85,16 +102,23 @@ export default {
         },
     },
 
-    onLoad () {
+    computed: {
+        imageTranslateX() {
+            return (this.systemInfo.windowWidth - this.imageWidth) / 2
+        },
+
+        imageTranslateY() {
+            return (this.systemInfo.windowHeight - this.imageHeight) / 2
+        }
+    },
+
+    onReady () {
+        this.initClipBox()
+        this.initImage()
+        this.initCanvas()
     },
 
     methods: {
-        initCanvas() {
-            this.canvasWidth = this.clipBoxWidth
-            this.canvasHeight = this.clipBoxHeight
-            this.canvasContext = uni.createCanvasContext('image-cropper')
-        },
-
         initClipBox() {
             const { windowWidth, windowHeight } = this.systemInfo
 
@@ -108,7 +132,39 @@ export default {
             }
             // 设置裁剪框为居中状态
             this.clipBoxLeft = (windowWidth - this.clipBoxWidth) / 2
-            this.clipBoxTop = (windowHeight - this.windowHeight) / 2
+            this.clipBoxTop = (windowHeight - this.clipBoxHeight) / 2
+        },
+
+        initImage() {
+            uni.getImageInfo({
+                src: this.imageSrc,
+                success: this.initImageSize
+            })
+        },
+
+        initImageSize({ width: imageOriginWidth, height: imageOriginHeight }) {
+            const { clipBoxWidth, clipBoxHeight } = this
+            const clipBoxAspectRatio = clipBoxWidth / clipBoxHeight
+            const imageOriginAspectRatio = imageOriginWidth / imageOriginHeight
+
+            let imageWidth, imageHeight
+            // 默认图片最短的边长度设置为裁剪框相应边的边长
+            if (imageOriginAspectRatio < clipBoxAspectRatio) {
+                imageWidth = clipBoxWidth
+                imageHeight = clipBoxHeight * (imageOriginHeight / imageOriginWidth)
+            } else {
+                imageWidth = clipBoxWidth * (imageOriginWidth / imageOriginHeight)
+                imageHeight = clipBoxHeight
+            }
+            
+            this.imageWidth = imageWidth
+            this.imageHeight = imageHeight
+        },
+
+        initCanvas() {
+            this.canvasWidth = this.clipBoxWidth
+            this.canvasHeight = this.clipBoxHeight
+            this.canvasContext = uni.createCanvasContext('image-cropper')
         },
 
         imageTouchStart({touches}) {
@@ -161,14 +217,10 @@ export default {
             .clip-box-wrap {
                 display: flex;
                 width: 100%;
-                height: 200px;
 
-                .clip-box-left {
-                    width: 50px;
-                }
                 .clip-box {
                     position: relative;
-                    width: 200px;
+                    box-sizing: border-box;
                     border: 1px solid red;
                 }
                 .clip-box-right {
