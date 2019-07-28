@@ -68,13 +68,9 @@ export default {
             canvasHeight: 200,
             systemInfo: uni.getSystemInfoSync(),
 
-            imageTouchStartPosition: [
-                {x: 0, y: 0},
-            ],
-            clipBoxTouchStartPosition: {
-                x: 0, y: 0
-            },
-            FORBID_TOUCH_MOVE: false
+            imageTouchStartPosition: [],
+            clipBoxTouchStartPosition: {},
+            FORBID_IAMGE_TOUCH: false
         }
     },
 
@@ -232,26 +228,26 @@ export default {
         },
 
         imageTouchStart({touches}) {
+            if (this.FORBID_IAMGE_TOUCH) return
+
             // 单指拖动
             if (touches.length === 1) {
                 const [{ clientX: x, clientY: y }] = touches
                 const { imageTranslateX: translateX, imageTranslateY: translateY } = this
 
-                this.imageTouchStartPosition = { x, y, translateX, translateY }
+                this.imageTouchStartPosition[0] = { x, y, translateX, translateY }
             }
             // 双指放大
-            else {
-
-            }
+            else {}
         },
 
         imageTouchMove({touches}) {
-            if (this.FORBID_TOUCH_MOVE) return
+            if (this.FORBID_IAMGE_TOUCH) return
 
             // 单指拖动
             if (touches.length === 1) {
                 const [{ clientX, clientY }] = touches
-                const { x, y, translateX, translateY } = this.imageTouchStartPosition
+                const { x, y, translateX, translateY } = this.imageTouchStartPosition[0]
 
                 const deltaX = clientX - x
                 const deltaY = clientY - y
@@ -268,9 +264,7 @@ export default {
                 this.imageTranslateY = imageTranslateY
             }
             // 双指放大
-            else {
-
-            }
+            else {}
         },
 
         limitImageTranslate(translateX, translateY) {
@@ -313,7 +307,7 @@ export default {
             else if ((rightBottomPoint.left < x && x < rightBottomPoint.right ) && (rightBottomPoint.top < y && y < rightBottomPoint.bottom)) {
                 touchPoint = 'rightBottom'
             }
-            // 触摸非剪裁框四角
+            // 触摸到其他区域不生效
             else {
                 return this.clipBoxTouchStartPosition.touchPoint = null
             }
@@ -326,10 +320,11 @@ export default {
                 height: this.clipBoxHeight 
             }
 
-            this.FORBID_TOUCH_MOVE = true
+            this.FORBID_IAMGE_TOUCH = true
         },
 
         clipBoxTouchMove({touches}) {
+            // 触摸到其他区域不生效
             if (!this.clipBoxTouchStartPosition.touchPoint) return
 
             const [{ clientX, clientY }] = touches
@@ -361,13 +356,11 @@ export default {
             if (touchPoint === 'rightBottom') {
                 this.clipBoxWidth = width + deltaX
                 this.clipBoxHeight = height + deltaY
-
-                // nothing
             }
         },
 
         clipBoxTouchEnd() {
-            this.FORBID_TOUCH_MOVE = false
+            this.FORBID_IAMGE_TOUCH = false
         }
     }
 }
