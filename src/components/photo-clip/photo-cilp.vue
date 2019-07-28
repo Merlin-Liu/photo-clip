@@ -1,6 +1,6 @@
 <template>
     <view class="photo-cliper">
-        <view class="photo-cliper-main" @touchstart="imageTouchStart" @touchmove="imageTouchMove">
+        <view class="photo-cliper-main" @touchstart="clipBoxTouchStart" @touchmove="clipBoxTouchMove" @touchend="clipBoxTouchEnd">
             <view class="photo-cliper-content">
                 <view class="clip-box-top shallow-background" :style="{height: `${clipBoxTop}px`}"></view>
                 <view class="clip-box-wrap">
@@ -34,6 +34,8 @@
                     height: `${imageHeight}px`,
                     transform: `translate3d(${imageTranslateX}px, ${imageTranslateY}px, 0)`
                 }"
+                @touchstart="imageTouchStart"
+                @touchmove="imageTouchMove"
             ></image>
         </view>
         <canvas
@@ -68,7 +70,11 @@ export default {
 
             imageTouchStartPosition: [
                 {x: 0, y: 0},
-            ]
+            ],
+            clipBoxTouchStartPosition: {
+                x: 0, y: 0
+            },
+            FORBID_TOUCH_MOVE: false
         }
     },
 
@@ -111,7 +117,7 @@ export default {
         // 限制图片只能在裁剪框内拖动
         needLimitImageMoveRange: {
             type: Boolean,
-            default: true
+            default: false
         }
     },
 
@@ -132,6 +138,41 @@ export default {
             set(imageTranslateY) {
                 this.imageCenterPoint.y =  imageTranslateY  + (this.imageHeight / 2)
             }
+        },
+
+        // 裁剪框四个角的坐标，用于裁剪框的拖拽
+        clipBoxPoint() {
+            const { clipBoxLeft, clipBoxTop, clipBoxWidth, clipBoxHeight } = this,
+                POINT_WIDTH = 15
+            const clipRight = clipBoxLeft + clipBoxWidth,
+                clipBottom = clipBoxTop + clipBoxHeight
+
+            const leftTopPoint = { 
+                top: clipBoxTop - POINT_WIDTH,
+                right: clipBoxLeft + POINT_WIDTH,
+                bottom: clipBoxTop + POINT_WIDTH,
+                left: clipBoxLeft - POINT_WIDTH
+            }
+            const rightTopPoint = { 
+                top: clipBoxTop - POINT_WIDTH,
+                right: clipRight + POINT_WIDTH,
+                bottom: clipBoxTop + POINT_WIDTH,
+                left: clipRight - POINT_WIDTH
+            }
+            const leftBottomPoint = { 
+                top: clipBottom - POINT_WIDTH,
+                right: clipBoxLeft + POINT_WIDTH,
+                bottom: clipBottom + POINT_WIDTH,
+                left: clipBoxLeft - POINT_WIDTH
+            }
+            const rightBottomPoint = { 
+                top: clipBottom - POINT_WIDTH,
+                right: clipRight + POINT_WIDTH,
+                bottom: clipBottom + POINT_WIDTH,
+                left: clipRight - POINT_WIDTH
+            }
+
+            return { leftTopPoint, leftBottomPoint, rightTopPoint, rightBottomPoint }
         }
     },
 
@@ -205,6 +246,8 @@ export default {
         },
 
         imageTouchMove({touches}) {
+            if (this.FORBID_TOUCH_MOVE) return
+
             // 单指拖动
             if (touches.length === 1) {
                 const [{ clientX, clientY }] = touches
@@ -217,8 +260,8 @@ export default {
                 
                 if (this.needLimitImageMoveRange) {
                     const result = this.limitImageTranslate(imageTranslateX, imageTranslateY)
-                    imageTranslateX = result.imageTranslateX
-                    imageTranslateY = result.imageTranslateY
+                    imageTranslateX = result.translateX
+                    imageTranslateY = result.translateY
                 }
 
                 this.imageTranslateX = imageTranslateX
@@ -230,15 +273,101 @@ export default {
             }
         },
 
-        draw() {
-            if (!this.imageSrc) return 
-        },
-
-        canvasDraw() {
-        },
-
         limitImageTranslate(translateX, translateY) {
-            
+            const { clipBoxTop, clipBoxLeft, clipBoxWidth, clipBoxHeight, imageWidth, imageHeight } = this
+
+            if (translateX > clipBoxLeft) {
+                translateX = clipBoxLeft
+            }
+            else if (translateX < (clipBoxLeft + clipBoxWidth - imageWidth)) {
+                translateX = clipBoxLeft + clipBoxWidth - imageWidth
+            }
+            if (translateY > clipBoxTop) {
+                translateY = clipBoxTop
+            }
+            else if (translateY < (clipBoxTop + clipBoxHeight - imageHeight)) {
+                translateY = clipBoxTop + clipBoxHeight - imageHeight
+            }
+
+            return { translateX, translateY }
+        },
+
+        clipBoxTouchStart({touches}) {
+            const [{ clientX: x, clientY: y }] = touches
+            const { leftTopPoint, leftBottomPoint, rightTopPoint, rightBottomPoint } = this.clipBoxPoint
+
+            let touchPoint
+            // 触摸裁剪框左上角
+            if ((leftTopPoint.left < x && x < leftTopPoint.right ) && (leftTopPoint.top < y && y < leftTopPoint.bottom)) {
+                touchPoint = 'leftTop'
+            }
+            // 触摸裁剪框右上角
+            else if ((rightTopPoint.left < x && x < rightTopPoint.right ) && (rightTopPoint.top < y && y < rightTopPoint.bottom)) {
+                touchPoint = 'rightTop'
+            }
+            // 触摸裁剪框左下角
+            else if ((leftBottomPoint.left < x && x < leftBottomPoint.right ) && (leftBottomPoint.top < y && y < leftBottomPoint.bottom)) {
+                touchPoint = 'leftBottom'
+            }
+            // 触摸裁剪框右下角
+            else if ((rightBottomPoint.left < x && x < rightBottomPoint.right ) && (rightBottomPoint.top < y && y < rightBottomPoint.bottom)) {
+                touchPoint = 'rightBottom'
+            }
+            // 触摸非剪裁框四角
+            else {
+                return this.clipBoxTouchStartPosition.touchPoint = null
+            }
+
+            this.clipBoxTouchStartPosition = { 
+                x, y, touchPoint, 
+                left: this.clipBoxLeft,
+                top: this.clipBoxTop,
+                width: this.clipBoxWidth,
+                height: this.clipBoxHeight 
+            }
+
+            this.FORBID_TOUCH_MOVE = true
+        },
+
+        clipBoxTouchMove({touches}) {
+            if (!this.clipBoxTouchStartPosition.touchPoint) return
+
+            const [{ clientX, clientY }] = touches
+            const { x, y, touchPoint, left, top, width, height } = this.clipBoxTouchStartPosition
+
+            const deltaX = clientX - x
+            const deltaY = clientY - y
+
+            if (touchPoint === 'leftTop') {
+                this.clipBoxWidth = width - deltaX
+                this.clipBoxHeight = height - deltaY
+
+                // 裁剪框宽高增加，则裁剪框left、top则减小，反之同理
+                this.clipBoxLeft = left + deltaX
+                this.clipBoxTop = top + deltaY
+            }
+            if (touchPoint === 'rightTop') {
+                this.clipBoxWidth = width + deltaX
+                this.clipBoxHeight = height - deltaY
+
+                this.clipBoxTop = top + deltaY
+            }
+            if (touchPoint === 'leftBottom') {
+                this.clipBoxWidth = width - deltaX
+                this.clipBoxHeight = height + deltaY
+
+                this.clipBoxLeft = left + deltaX
+            }
+            if (touchPoint === 'rightBottom') {
+                this.clipBoxWidth = width + deltaX
+                this.clipBoxHeight = height + deltaY
+
+                // nothing
+            }
+        },
+
+        clipBoxTouchEnd() {
+            this.FORBID_TOUCH_MOVE = false
         }
     }
 }
@@ -259,11 +388,13 @@ export default {
         height: 100%;
 
         .photo-cliper-content {
+            position: relative;
             display: flex;
             flex-direction:column;
             width: 100%;
             height: 100%;
             z-index: 20;
+            pointer-events: none;
 
             .clip-box-top {
                 width: 100%;
@@ -279,6 +410,7 @@ export default {
                     box-sizing: border-box;
                     border: 1px solid red;
                 }
+
                 .clip-box-right {
                     flex: auto;
                 }
@@ -295,7 +427,7 @@ export default {
             left: 0;
             width: 400px;
             height: 400px;
-            z-index: -1;
+            z-index: 10;
         }
     }
 }
