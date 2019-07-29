@@ -1,6 +1,6 @@
 <template>
     <view class="photo-cliper">
-        <view class="photo-cliper-main" @touchstart="clipBoxTouchStart" @touchmove="clipBoxTouchMove" @touchend="clipBoxTouchEnd">
+        <view class="photo-cliper-main" @touchstart="clipBoxTouchStart" @touchmove="clipBoxTouchMove" @touchend="clipBoxTouchEnd" @tap="imageContentClick">
             <view class="photo-cliper-content">
                 <view class="clip-box-top shallow-background" :style="{height: `${clipBoxTop}px`}"></view>
                 <view class="clip-box-wrap">
@@ -27,7 +27,6 @@
             </view>
             <image
                 class="photo-cliper-image"
-                mode="aspectFill"
                 :src="imageSrc"
                 :style="{
                     width: `${imageWidth}px`,
@@ -40,8 +39,8 @@
         </view>
         <canvas
             :style="{
-                width: `${clipBoxWidth}px`,
-                height: `${clipBoxHeight}px`
+                width: `${canvasWidth * exportIamgeScale}px`,
+                height: `${canvasHeight * exportIamgeScale}px`
             }"
             canvas-id="image-cropper"
         >
@@ -59,6 +58,7 @@ export default {
                 x: uni.getSystemInfoSync().windowWidth / 2,
                 y: uni.getSystemInfoSync().windowHeight / 2
             },
+            imageLocalPath: '',
             clipBoxWidth: this.initialClipBoxWidth,
             clipBoxHeight: this.initialClipBoxHeight,
             clipBoxTop: this.initialClipBoxTop,
@@ -113,7 +113,7 @@ export default {
         // 限制图片只能在裁剪框内拖动
         needLimitImageMoveRange: {
             type: Boolean,
-            default: false
+            default: true
         }
     },
 
@@ -211,9 +211,9 @@ export default {
             // 默认图片最短的边长度设置为裁剪框相应边的边长
             if (imageOriginAspectRatio < clipBoxAspectRatio) {
                 imageWidth = clipBoxWidth
-                imageHeight = clipBoxHeight * (imageOriginHeight / imageOriginWidth)
+                imageHeight = clipBoxWidth * (imageOriginHeight / imageOriginWidth)
             } else {
-                imageWidth = clipBoxWidth * (imageOriginWidth / imageOriginHeight)
+                imageWidth = clipBoxHeight * (imageOriginWidth / imageOriginHeight)
                 imageHeight = clipBoxHeight
             }
             
@@ -222,8 +222,6 @@ export default {
         },
 
         initCanvas() {
-            this.canvasWidth = this.clipBoxWidth
-            this.canvasHeight = this.clipBoxHeight
             this.canvasContext = uni.createCanvasContext('image-cropper')
         },
 
@@ -276,6 +274,7 @@ export default {
             else if (translateX < (clipBoxLeft + clipBoxWidth - imageWidth)) {
                 translateX = clipBoxLeft + clipBoxWidth - imageWidth
             }
+            
             if (translateY > clipBoxTop) {
                 translateY = clipBoxTop
             }
@@ -361,6 +360,49 @@ export default {
 
         clipBoxTouchEnd() {
             this.FORBID_IAMGE_TOUCH = false
+        },
+
+        imageContentClick({touches}) {
+            this.drawImage(this.drawImageCallBack)
+        },
+
+        drawImage(drawImageCallBack) {
+            const { clipBoxLeft, clipBoxTop, clipBoxWidth, clipBoxHeight, imageTranslateX, imageTranslateY, imageSrc, imageWidth, imageHeight, scale, exportIamgeScale } = this
+            this.canvasWidth = clipBoxWidth
+            this.canvasHeight = clipBoxHeight
+
+            const drawImageWidth = imageWidth * scale * exportIamgeScale
+            const drawImageHeight = imageHeight * scale * exportIamgeScale
+
+            // 裁剪框左上角和图片左上角距离
+            const x = (clipBoxLeft - imageTranslateX) * exportIamgeScale
+            const y = (clipBoxTop - imageTranslateY) * exportIamgeScale
+
+            this.canvasContext.drawImage(imageSrc, -x, -y, drawImageWidth, drawImageHeight)
+            this.canvasContext.draw(false, setTimeout(() => {
+                drawImageCallBack()
+            }, 500))
+        },
+
+        drawImageCallBack() {
+            const { clipBoxWidth, clipBoxHeight, exportIamgeScale } = this
+            const width = clipBoxWidth * exportIamgeScale
+            const height = clipBoxHeight * exportIamgeScale
+
+            uni.canvasToTempFilePath({
+                width,
+                height,
+                destWidth: width,
+                destHeight: height,
+                fileType: 'jpg',
+                canvasId: 'image-cropper',
+                success: res => {
+                    uni.previewImage({
+                        current: res.tempFilePath,
+                        urls: [res.tempFilePath]
+                    })
+                }
+            })
         }
     }
 }
@@ -422,6 +464,15 @@ export default {
             height: 400px;
             z-index: 10;
         }
+    }
+    
+    canvas {
+        position:fixed;
+        top: 0px;
+        z-index:10;
+        top:-200%;
+        background:white;
+        pointer-events:none;
     }
 }
 .clip-box-border {
