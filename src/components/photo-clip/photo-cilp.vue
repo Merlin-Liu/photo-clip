@@ -274,7 +274,7 @@ export default {
             else if (translateX < (clipBoxLeft + clipBoxWidth - imageWidth)) {
                 translateX = clipBoxLeft + clipBoxWidth - imageWidth
             }
-            
+
             if (translateY > clipBoxTop) {
                 translateY = clipBoxTop
             }
@@ -468,10 +468,8 @@ export default {
     
     canvas {
         position:fixed;
-        top: 0px;
         z-index:10;
         top:-200%;
-        background:white;
         pointer-events:none;
     }
 }
@@ -481,51 +479,51 @@ export default {
     pointer-events:auto;
 
     &.border-top-left {
-        top: -5rpx;
-        left: -5rpx;
+        top: -3px;
+        left: -3px;
         width: 33rpx;
-        height: 5rpx;
+        height: 3px;
     }
     &.border-left-top {
-        top: -5rpx;
-        left: -5rpx;
-        width: 5rpx;
+        top: -3px;
+        left: -3px;
+        width: 3px;
         height: 33rpx;
     }
     &.border-top-right {
-        top: -5rpx;
-        right: -5rpx;
+        top: -3px;
+        right: -3px;
         width: 33rpx;
-        height: 5rpx;
+        height: 3px;
     }
     &.border-right-top {
-        top: -5rpx;
-        right: -5rpx;
-        width: 5rpx;
+        top: -3px;
+        right: -3px;
+        width: 3px;
         height: 33rpx;
     }
     &.border-bottom-left {
-        bottom: -5rpx;
-        left: -5rpx;
+        bottom: -3px;
+        left: -3px;
         width: 33rpx;
-        height: 5rpx;
+        height: 3px;
     }
     &.border-left-bottom {
-        bottom: -5rpx;
-        left: -5rpx;
-        width: 5rpx;
+        bottom: -3px;
+        left: -3px;
+        width: 3px;
         height: 33rpx;
     }
     &.border-bottom-right {
-        bottom: -5rpx;
-        right: -5rpx;
+        bottom: -3px;
+        right: -3px;
         width: 33rpx;
-        height: 5rpx;
+        height: 3px;
     }
     &.border-right-bottom {
-        bottom: -5rpx;
-        right: -5rpx;
-        width: 5rpx;
+        bottom: -3px;
+        right: -3px;
+        width: 3px;
         height: 33rpx;
     }
 }
