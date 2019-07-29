@@ -1,6 +1,6 @@
 <template>
     <view class="photo-cliper">
-        <view class="photo-cliper-main" @touchstart="clipBoxTouchStart" @touchmove="clipBoxTouchMove" @touchend="clipBoxTouchEnd" @tap="imageContentClick">
+        <view class="photo-cliper-main" @touchstart="clipBoxTouchStart" @touchmove="clipBoxTouchMove" @touchend="clipBoxTouchEnd" @tap="previewImage">
             <view class="photo-cliper-content">
                 <view class="clip-box-top shallow-background" :style="{height: `${clipBoxTop}px`}"></view>
                 <view class="clip-box-wrap">
@@ -31,7 +31,7 @@
                 :style="{
                     width: `${imageWidth}px`,
                     height: `${imageHeight}px`,
-                    transform: `translate3d(${imageTranslateX}px, ${imageTranslateY}px, 0)`
+                    transform: `translate3d(${imageTranslateX}px, ${imageTranslateY}px, 0) scale(${scale}) rotate(${angle}deg)`
                 }"
                 @touchstart="imageTouchStart"
                 @touchmove="imageTouchMove"
@@ -54,11 +54,13 @@ export default {
         return {
             imageWidth: 0,
             imageHeight: 0,
+            scale: this.initialScale,
+            angle: this.initialAngle,
             imageCenterPoint: {
                 x: uni.getSystemInfoSync().windowWidth / 2,
                 y: uni.getSystemInfoSync().windowHeight / 2
             },
-            imageLocalPath: '',
+
             clipBoxWidth: this.initialClipBoxWidth,
             clipBoxHeight: this.initialClipBoxHeight,
             clipBoxTop: this.initialClipBoxTop,
@@ -101,9 +103,13 @@ export default {
             default: 0
         },
         // 图片缩放比
-        scale: {
+        initialScale: {
             type: Number,
             default: 1
+        },
+        initialAngle: {
+            type: Number,
+            default: 0
         },
         // 导出的图片相对于裁剪框的缩放比
         exportIamgeScale: {
@@ -253,7 +259,7 @@ export default {
                 let imageTranslateY = translateY + deltaY
                 
                 if (this.needLimitImageMoveRange) {
-                    const result = this.limitImageTranslate(imageTranslateX, imageTranslateY)
+                    const result = this.limitImageTransform(imageTranslateX, imageTranslateY)
                     imageTranslateX = result.translateX
                     imageTranslateY = result.translateY
                 }
@@ -263,26 +269,6 @@ export default {
             }
             // 双指放大
             else {}
-        },
-
-        limitImageTranslate(translateX, translateY) {
-            const { clipBoxTop, clipBoxLeft, clipBoxWidth, clipBoxHeight, imageWidth, imageHeight } = this
-
-            if (translateX > clipBoxLeft) {
-                translateX = clipBoxLeft
-            }
-            else if (translateX < (clipBoxLeft + clipBoxWidth - imageWidth)) {
-                translateX = clipBoxLeft + clipBoxWidth - imageWidth
-            }
-
-            if (translateY > clipBoxTop) {
-                translateY = clipBoxTop
-            }
-            else if (translateY < (clipBoxTop + clipBoxHeight - imageHeight)) {
-                translateY = clipBoxTop + clipBoxHeight - imageHeight
-            }
-
-            return { translateX, translateY }
         },
 
         clipBoxTouchStart({touches}) {
@@ -362,8 +348,36 @@ export default {
             this.FORBID_IAMGE_TOUCH = false
         },
 
-        imageContentClick({touches}) {
-            this.drawImage(this.drawImageCallBack)
+        limitImageTransform(translateX, translateY) {
+            const { clipBoxTop, clipBoxLeft, clipBoxWidth, clipBoxHeight, imageWidth, imageHeight } = this
+
+            if (translateX > clipBoxLeft) {
+                translateX = clipBoxLeft
+            }
+            else if (translateX < (clipBoxLeft + clipBoxWidth - imageWidth)) {
+                translateX = clipBoxLeft + clipBoxWidth - imageWidth
+            }
+
+            if (translateY > clipBoxTop) {
+                translateY = clipBoxTop
+            }
+            else if (translateY < (clipBoxTop + clipBoxHeight - imageHeight)) {
+                translateY = clipBoxTop + clipBoxHeight - imageHeight
+            }
+
+            return { translateX, translateY }
+        },
+
+        previewImage(event) {
+            const x = event.detail ? event.detail.x : event.touches[0].clientX
+            const y = event.detail ? event.detail.y : event.touches[0].clientY
+            const { clipBoxLeft, clipBoxTop, clipBoxWidth, clipBoxHeight } = this
+            const clipBoxRight = clipBoxLeft + clipBoxWidth
+            const clipBoxBottom = clipBoxTop + clipBoxHeight
+            
+            if ((clipBoxLeft <= x && x <= clipBoxRight) && (clipBoxTop <= y && y <= clipBoxBottom)) {
+                this.drawImage(this.drawImageCallBack)
+            }            
         },
 
         drawImage(drawImageCallBack) {
@@ -403,6 +417,23 @@ export default {
                     })
                 }
             })
+        },
+
+        // 以下用于父组件使用
+        moveV(direction) {
+            this.imageTranslateX += (direction === 'left') ? -3 : 3
+        },
+
+        moveH(direction) {
+            this.imageTranslateY += (direction === 'up') ? -3 : 3
+        },
+
+        scaling(opeation) {
+            this.scale += (opeation === 'enlarge') ? 0.02 : -0.02
+        },
+
+        rotate() {
+            this.angle = (this.angle + 90) % 360
         }
     }
 }
