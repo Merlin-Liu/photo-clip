@@ -272,7 +272,7 @@ export default {
                 let imageTranslateY = translateY + deltaY
                 
                 if (this.needLimitImageMoveRange) {
-                    const result = this.limitImageTransform(imageTranslateX, imageTranslateY)
+                    const result = this.limitImageTranslate(imageTranslateX, imageTranslateY)
                     imageTranslateX = result.translateX
                     imageTranslateY = result.translateY
                 }
@@ -355,13 +355,38 @@ export default {
                 this.clipBoxWidth = width + deltaX
                 this.clipBoxHeight = height + deltaY
             }
+
+            if (this.needLimitImageMoveRange) {
+                // 1
+                this.scale = this.limitImageScale()
+                // 2 先后顺序不能变
+                const result = this.limitImageTranslate(
+                    this.imageTranslateX,
+                    this.imageTranslateY
+                )
+                this.imageTranslateX = result.translateX
+                this.imageTranslateY = result.translateY
+            }
         },
 
         clipBoxTouchEnd() {
             this.FORBID_IAMGE_TOUCH = false
         },
 
-        limitImageTransform(translateX, translateY) {
+        limitImageScale() {
+            let { clipBoxWidth, clipBoxHeight, imageWidth, imageHeight, scaledImageWidth, scaledImageHeight, scale } = this
+
+            if (scaledImageWidth < clipBoxWidth) {
+                scale = clipBoxWidth / imageWidth
+            }
+            if (scaledImageHeight < clipBoxHeight) {
+                scale = Math.max(scale, clipBoxHeight / imageHeight)
+            }
+            
+            return scale
+        },
+
+        limitImageTranslate(translateX, translateY) {
             const {
                 clipBoxTop, clipBoxLeft, clipBoxWidth, clipBoxHeight,
                 imageWidth, imageHeight, scaledImageWidth, scaledImageHeight
@@ -448,6 +473,7 @@ export default {
                         current: res.tempFilePath,
                         urls: [res.tempFilePath]
                     })
+                    console.log(`生成图片url：${res.tempFilePath}`)
                 }
             })
         },
@@ -466,7 +492,7 @@ export default {
         },
 
         rotate() {
-            this.angle = (this.angle + 90) % 360
+            this.angle = (this.angle - 90) % 360
         }
     }
 }
