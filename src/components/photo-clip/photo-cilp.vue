@@ -80,12 +80,6 @@ export default {
         imageSrc: {
             type: String
         },
-        // imageWidth: {
-        //     type: Number
-        // },
-        // imageHeight: {
-        //     type: Number
-        // },
         initialClipBoxWidth: {
             type: Number,
             default: 250
@@ -375,22 +369,28 @@ export default {
             const clipBoxRight = clipBoxLeft + clipBoxWidth
             const clipBoxBottom = clipBoxTop + clipBoxHeight
             
+            // 点击裁剪框区域
             if ((clipBoxLeft <= x && x <= clipBoxRight) && (clipBoxTop <= y && y <= clipBoxBottom)) {
                 this.drawImage(this.drawImageCallBack)
             }            
         },
 
         drawImage(drawImageCallBack) {
-            const { clipBoxLeft, clipBoxTop, clipBoxWidth, clipBoxHeight, imageTranslateX, imageTranslateY, imageSrc, imageWidth, imageHeight, scale, exportIamgeScale } = this
+            const { clipBoxLeft, clipBoxTop, clipBoxWidth, clipBoxHeight, imageSrc, imageWidth, imageHeight, scale, exportIamgeScale, imageCenterPoint } = this
             this.canvasWidth = clipBoxWidth
             this.canvasHeight = clipBoxHeight
 
-            const drawImageWidth = imageWidth * scale * exportIamgeScale
-            const drawImageHeight = imageHeight * scale * exportIamgeScale
+            const scaledImageWidth = imageWidth * scale
+            const scaledImageHeight = imageHeight * scale
+            // 裁剪框左上角距离缩放后的图片的左上角的xy值
+            // ⚠️：缩放后的imageTranslateX、Y需要用图片中心点减去缩放后图片的宽高，所以this.imageTranslateX、Y不再适用
+            const scaledImageTranslateX = imageCenterPoint.x - (scaledImageWidth / 2)
+            const scaledImageTranslateY = imageCenterPoint.y - (scaledImageHeight / 2)
 
-            // 裁剪框左上角和图片左上角距离
-            const x = (clipBoxLeft - imageTranslateX) * exportIamgeScale
-            const y = (clipBoxTop - imageTranslateY) * exportIamgeScale
+            const x = Math.round( (clipBoxLeft - scaledImageTranslateX) * exportIamgeScale )
+            const y = Math.round( (clipBoxTop - scaledImageTranslateY) * exportIamgeScale )
+            const drawImageWidth = scaledImageWidth * exportIamgeScale
+            const drawImageHeight = scaledImageHeight * exportIamgeScale
 
             this.canvasContext.drawImage(imageSrc, -x, -y, drawImageWidth, drawImageHeight)
             this.canvasContext.draw(false, setTimeout(() => {
