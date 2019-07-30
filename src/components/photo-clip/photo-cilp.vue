@@ -118,6 +118,7 @@ export default {
     },
 
     computed: {
+        // 图片的tranlate值，用来控制图片的位置
         imageTranslateX: {
             get() {
                 return this.imageCenterPoint.x - (this.imageWidth / 2)
@@ -134,6 +135,24 @@ export default {
             set(imageTranslateY) {
                 this.imageCenterPoint.y =  imageTranslateY  + (this.imageHeight / 2)
             }
+        },
+
+        // 缩放后的图片宽高
+        scaledImageWidth() {
+            return this.imageWidth * this.scale
+        },
+
+        scaledImageHeight() {
+            return this.imageHeight * this.scale
+        },
+
+        // 缩放后的图片的translate值，需要用缩放后的图片宽高来计算
+        scaledImageTranslateX() {
+            return this.imageCenterPoint.x - (this.scaledImageWidth / 2)
+        },
+
+        scaledImageTranslateY() {
+            return this.imageCenterPoint.y - (this.scaledImageHeight / 2)
         },
 
         // 裁剪框四个角的坐标，用于裁剪框的拖拽
@@ -343,20 +362,35 @@ export default {
         },
 
         limitImageTransform(translateX, translateY) {
-            const { clipBoxTop, clipBoxLeft, clipBoxWidth, clipBoxHeight, imageWidth, imageHeight } = this
+            const {
+                clipBoxTop, clipBoxLeft, clipBoxWidth, clipBoxHeight,
+                imageWidth, imageHeight, scaledImageWidth, scaledImageHeight
+            } = this
+            const clipBoxRight = clipBoxLeft + clipBoxWidth,
+                  clipBoxBottom = clipBoxTop + clipBoxHeight
 
-            if (translateX > clipBoxLeft) {
-                translateX = clipBoxLeft
+            // 根据换算关系求得scaleTranslate和tranlate差值
+            const diffX = (imageWidth - scaledImageWidth) / 2
+            const diffY = (imageHeight - scaledImageHeight) / 2
+            const scaleTranslateX = translateX + diffX
+            const scaleTranslateY = translateY + diffY
+
+            if (scaleTranslateX > clipBoxLeft) {
+                // 等价于：scaleTranslateX = clipBoxLeft 
+                translateX = clipBoxLeft - diffX
             }
-            else if (translateX < (clipBoxLeft + clipBoxWidth - imageWidth)) {
-                translateX = clipBoxLeft + clipBoxWidth - imageWidth
+            else if (scaleTranslateX + scaledImageWidth < clipBoxRight) {
+                // 等价于：scaleTranslateX = clipBoxRight - scaledImageWidth
+                translateX = clipBoxRight - scaledImageWidth - diffX
             }
 
-            if (translateY > clipBoxTop) {
-                translateY = clipBoxTop
+            if (scaleTranslateY > clipBoxTop) {
+                // 等价于：scaleTranslateY = clipBoxTop
+                translateY = clipBoxTop - diffY
             }
-            else if (translateY < (clipBoxTop + clipBoxHeight - imageHeight)) {
-                translateY = clipBoxTop + clipBoxHeight - imageHeight
+            else if (scaleTranslateY + scaledImageHeight < clipBoxBottom) {
+                // 等价于：scaleTranslateY = clipBoxBottom - scaledImageHeight
+                translateY = clipBoxBottom - scaledImageHeight - diffY
             }
 
             return { translateX, translateY }
@@ -376,17 +410,16 @@ export default {
         },
 
         drawImage(drawImageCallBack) {
-            const { clipBoxLeft, clipBoxTop, clipBoxWidth, clipBoxHeight, imageSrc, imageWidth, imageHeight, scale, exportIamgeScale, imageCenterPoint } = this
+            const {
+                clipBoxLeft, clipBoxTop, clipBoxWidth, clipBoxHeight,
+                imageSrc, scaledImageWidth, scaledImageHeight,
+                scaledImageTranslateX, scaledImageTranslateY, exportIamgeScale
+            } = this
+
             this.canvasWidth = clipBoxWidth
             this.canvasHeight = clipBoxHeight
 
-            const scaledImageWidth = imageWidth * scale
-            const scaledImageHeight = imageHeight * scale
             // 裁剪框左上角距离缩放后的图片的左上角的xy值
-            // ⚠️：缩放后的imageTranslateX、Y需要用图片中心点减去缩放后图片的宽高，所以this.imageTranslateX、Y不再适用
-            const scaledImageTranslateX = imageCenterPoint.x - (scaledImageWidth / 2)
-            const scaledImageTranslateY = imageCenterPoint.y - (scaledImageHeight / 2)
-
             const x = Math.round( (clipBoxLeft - scaledImageTranslateX) * exportIamgeScale )
             const y = Math.round( (clipBoxTop - scaledImageTranslateY) * exportIamgeScale )
             const drawImageWidth = scaledImageWidth * exportIamgeScale
