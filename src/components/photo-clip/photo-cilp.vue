@@ -194,8 +194,8 @@ export default {
     watch: {
         needLimitImageMoveRange(val) {
             if (val) {
-                this.scale = this.limitImageScale()
-                this.imageCenterPoint = this.limitImageTranslate()
+                this.limitImageScale()
+                this.limitImagePosition()
             }
         },
         angle() {
@@ -246,7 +246,7 @@ export default {
             this.imageHeight = imageHeight
 
             if (this.needLimitImageMoveRange) {
-                this.limitImageTranslate(this.imageTranslateX, this.imageTranslateY)
+                this.limitImagePosition()
             }
         },
 
@@ -300,13 +300,10 @@ export default {
                 let imageCenterPointY = cy + deltaY
                 
                 if (this.needLimitImageMoveRange) {
-                    const result = this.limitImageTranslate(imageCenterPointX, imageCenterPointY)
-                    imageCenterPointX = result.x
-                    imageCenterPointY = result.y
+                    this.limitImagePosition(imageCenterPointX, imageCenterPointY)
                 }
-                this.imageCenterPoint = {
-                    x: imageCenterPointX,
-                    y: imageCenterPointY
+                else {
+                    this.imageCenterPoint = { x: imageCenterPointX, y: imageCenterPointY }
                 }
             }
             // 双指放大
@@ -387,9 +384,9 @@ export default {
 
             if (this.needLimitImageMoveRange) {
                 // 1
-                this.scale = this.limitImageScale()
+                this.limitImageScale()
                 // 2 先后顺序不能变
-                this.imageCenterPoint = this.limitImageTranslate()
+                this.limitImagePosition()
             }
         },
 
@@ -416,10 +413,10 @@ export default {
                 scale = Math.max(scale, clipBoxHeight / imageHeight)
             }
 
-            return scale
+            this.scale = scale
         },
 
-        limitImageTranslate(x, y) {
+        limitImagePosition(x, y) {
             let { clipBoxTop, clipBoxLeft, clipBoxWidth, clipBoxHeight, imageCenterPoint, imageWidth, imageHeight, scaledImageWidth, scaledImageHeight, scale, angle } = this
 
             if (x === undefined) x = imageCenterPoint.x
@@ -454,7 +451,7 @@ export default {
                 y = yMin
             }
 
-            return { x, y }
+            this.imageCenterPoint = { x, y }
         },
 
         previewImage(event) {
@@ -532,8 +529,8 @@ export default {
 
         rotate() {
             this.angle = (this.angle - 90) % 360
-            this.scale = this.limitImageScale()
-            this.imageCenterPoint = this.limitImageTranslate()
+            this.limitImageScale()
+            this.limitImagePosition()
         }
     },
 
