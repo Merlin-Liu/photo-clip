@@ -191,10 +191,10 @@ export default {
         }
     },
 
-    onReady () {
-        this.initClipBox()
-        this.initImage()
-        this.initCanvas()
+    watch: {
+        angle() {
+            this.setClipBoxAndImageCenter()
+        }
     },
 
     methods: {
@@ -238,6 +238,23 @@ export default {
             
             this.imageWidth = imageWidth
             this.imageHeight = imageHeight
+
+            if (this.needLimitImageMoveRange) {
+                this.limitImageTranslate(this.imageTranslateX, this.imageTranslateY)
+            }
+        },
+
+        setClipBoxAndImageCenter() {
+            const { windowWidth, windowHeight } = this.systemInfo
+            const { clipBoxWidth, clipBoxHeight, imageTranslateX, imageTranslateY } = this
+            const clipBoxLeft = (windowWidth - clipBoxWidth) / 2
+            const clipBoxTop = (windowHeight - clipBoxHeight) / 2
+
+            //顺序不能变
+            this.imageTranslateX = imageTranslateX - (this.clipBoxLeft - clipBoxLeft)
+            this.clipBoxLeft = clipBoxLeft
+            this.imageTranslateY = imageTranslateY - (this.clipBoxTop - clipBoxTop)
+            this.clipBoxTop = clipBoxTop  
         },
 
         initCanvas() {
@@ -250,9 +267,14 @@ export default {
             // 单指拖动
             if (touches.length === 1) {
                 const [{ clientX: x, clientY: y }] = touches
-                const { imageTranslateX: translateX, imageTranslateY: translateY } = this
+                const { imageCenterPoint } = this
 
-                this.imageTouchStartPosition[0] = { x, y, translateX, translateY }
+                this.imageTouchStartPosition[0] = {
+                    x,
+                    y,
+                    cx: imageCenterPoint.x,
+                    cy: imageCenterPoint.y
+                }
             }
             // 双指放大
             else {}
@@ -264,21 +286,22 @@ export default {
             // 单指拖动
             if (touches.length === 1) {
                 const [{ clientX, clientY }] = touches
-                const { x, y, translateX, translateY } = this.imageTouchStartPosition[0]
+                const { x, y, cx, cy } = this.imageTouchStartPosition[0]
 
                 const deltaX = clientX - x
                 const deltaY = clientY - y
-                let imageTranslateX = translateX + deltaX
-                let imageTranslateY = translateY + deltaY
+                let imageCenterPointX = cx + deltaX
+                let imageCenterPointY = cy + deltaY
                 
                 if (this.needLimitImageMoveRange) {
-                    const result = this.limitImageTranslate(imageTranslateX, imageTranslateY)
-                    imageTranslateX = result.translateX
-                    imageTranslateY = result.translateY
+                    const result = this.limitImageTranslate(imageCenterPointX, imageCenterPointY)
+                    imageCenterPointX = result.x
+                    imageCenterPointY = result.y
                 }
-
-                this.imageTranslateX = imageTranslateX
-                this.imageTranslateY = imageTranslateY
+                this.imageCenterPoint = {
+                    x: imageCenterPointX,
+                    y: imageCenterPointY
+                }
             }
             // 双指放大
             else {}
@@ -374,51 +397,59 @@ export default {
         },
 
         limitImageScale() {
-            let { clipBoxWidth, clipBoxHeight, imageWidth, imageHeight, scaledImageWidth, scaledImageHeight, scale } = this
+            let { clipBoxWidth, clipBoxHeight, imageWidth, imageHeight, scaledImageWidth, scaledImageHeight, scale, angle } = this
+
+            if (Math.abs((angle / 90) % 2) === 1) {
+                imageWidth = imageHeight
+                imageHeight = this.imageWidth
+
+                scaledImageWidth = scaledImageHeight
+                scaledImageHeight = this.scaledImageWidth
+            }
 
             if (scaledImageWidth < clipBoxWidth) {
                 scale = clipBoxWidth / imageWidth
             }
+
             if (scaledImageHeight < clipBoxHeight) {
                 scale = Math.max(scale, clipBoxHeight / imageHeight)
             }
-            
+
             return scale
         },
 
-        limitImageTranslate(translateX, translateY) {
-            const {
+        limitImageTranslate(x, y) {
+            let {
                 clipBoxTop, clipBoxLeft, clipBoxWidth, clipBoxHeight,
-                imageWidth, imageHeight, scaledImageWidth, scaledImageHeight
+                imageWidth, imageHeight, scaledImageWidth, scaledImageHeight, 
+                scale, angle
             } = this
+
             const clipBoxRight = clipBoxLeft + clipBoxWidth,
                   clipBoxBottom = clipBoxTop + clipBoxHeight
 
-            // 根据换算关系求得scaleTranslate和tranlate差值
-            const diffX = (imageWidth - scaledImageWidth) / 2
-            const diffY = (imageHeight - scaledImageHeight) / 2
-            const scaleTranslateX = translateX + diffX
-            const scaleTranslateY = translateY + diffY
+            if (Math.abs((angle / 90) % 2) === 1) {
+                imageWidth = imageHeight
+                imageHeight = this.imageWidth
 
-            if (scaleTranslateX > clipBoxLeft) {
-                // 等价于：scaleTranslateX = clipBoxLeft 
-                translateX = clipBoxLeft - diffX
+                scaledImageWidth = scaledImageHeight
+                scaledImageHeight = this.scaledImageWidth
             }
-            else if (scaleTranslateX + scaledImageWidth < clipBoxRight) {
-                // 等价于：scaleTranslateX = clipBoxRight - scaledImageWidth
-                translateX = clipBoxRight - scaledImageWidth - diffX
+            
+            if (clipBoxLeft + scaledImageWidth/2 < x) {
+                x = clipBoxLeft + scaledImageWidth/2
+            } 
+            else if (clipBoxRight - scaledImageWidth/2 > x) {
+                x = clipBoxRight - scaledImageWidth/2
             }
-
-            if (scaleTranslateY > clipBoxTop) {
-                // 等价于：scaleTranslateY = clipBoxTop
-                translateY = clipBoxTop - diffY
-            }
-            else if (scaleTranslateY + scaledImageHeight < clipBoxBottom) {
-                // 等价于：scaleTranslateY = clipBoxBottom - scaledImageHeight
-                translateY = clipBoxBottom - scaledImageHeight - diffY
+            if (clipBoxTop + scaledImageHeight/2 < y) {
+                y = clipBoxTop + scaledImageHeight/2
+            } 
+            else if (clipBoxBottom - scaledImageHeight/2 > y) {
+                y = clipBoxBottom - scaledImageHeight/2
             }
 
-            return { translateX, translateY }
+            return { x, y }
         },
 
         previewImage(event) {
@@ -438,7 +469,8 @@ export default {
             const {
                 clipBoxLeft, clipBoxTop, clipBoxWidth, clipBoxHeight,
                 imageSrc, scaledImageWidth, scaledImageHeight,
-                scaledImageTranslateX, scaledImageTranslateY, exportIamgeScale
+                scaledImageTranslateX, scaledImageTranslateY, exportIamgeScale,
+                angle
             } = this
 
             this.canvasWidth = clipBoxWidth
@@ -450,10 +482,12 @@ export default {
             const drawImageWidth = scaledImageWidth * exportIamgeScale
             const drawImageHeight = scaledImageHeight * exportIamgeScale
 
+            this.canvasContext.rotate(angle * Math.PI / 180)
             this.canvasContext.drawImage(imageSrc, -x, -y, drawImageWidth, drawImageHeight)
             this.canvasContext.draw(false, setTimeout(() => {
                 drawImageCallBack()
             }, 500))
+            // this.canvasContext.clearRect()
         },
 
         drawImageCallBack() {
@@ -493,7 +527,17 @@ export default {
 
         rotate() {
             this.angle = (this.angle - 90) % 360
+            this.scale = this.limitImageScale()
+            const { x, y } = this.imageCenterPoint
+
+            this.imageCenterPoint = this.limitImageTranslate(x, y)
         }
+    },
+
+    onReady () {
+        this.initClipBox()
+        this.initImage()
+        this.initCanvas()
     }
 }
 </script>
@@ -553,6 +597,8 @@ export default {
             width: 400px;
             height: 400px;
             z-index: 10;
+            backface-visibility: hidden;
+            transform-origin:center;
         }
     }
     
