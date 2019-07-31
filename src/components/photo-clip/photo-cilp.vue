@@ -192,6 +192,12 @@ export default {
     },
 
     watch: {
+        needLimitImageMoveRange(val) {
+            if (val) {
+                this.scale = this.limitImageScale()
+                this.imageCenterPoint = this.limitImageTranslate()
+            }
+        },
         angle() {
             this.setClipBoxAndImageCenter()
         }
@@ -383,12 +389,7 @@ export default {
                 // 1
                 this.scale = this.limitImageScale()
                 // 2 先后顺序不能变
-                const result = this.limitImageTranslate(
-                    this.imageTranslateX,
-                    this.imageTranslateY
-                )
-                this.imageTranslateX = result.translateX
-                this.imageTranslateY = result.translateY
+                this.imageCenterPoint = this.limitImageTranslate()
             }
         },
 
@@ -419,11 +420,10 @@ export default {
         },
 
         limitImageTranslate(x, y) {
-            let {
-                clipBoxTop, clipBoxLeft, clipBoxWidth, clipBoxHeight,
-                imageWidth, imageHeight, scaledImageWidth, scaledImageHeight, 
-                scale, angle
-            } = this
+            let { clipBoxTop, clipBoxLeft, clipBoxWidth, clipBoxHeight, imageCenterPoint, imageWidth, imageHeight, scaledImageWidth, scaledImageHeight, scale, angle } = this
+
+            if (x === undefined) x = imageCenterPoint.x
+            if (y === undefined) y = imageCenterPoint.y
 
             const clipBoxRight = clipBoxLeft + clipBoxWidth,
                   clipBoxBottom = clipBoxTop + clipBoxHeight
@@ -436,17 +436,22 @@ export default {
                 scaledImageHeight = this.scaledImageWidth
             }
             
-            if (clipBoxLeft + scaledImageWidth/2 < x) {
-                x = clipBoxLeft + scaledImageWidth/2
-            } 
-            else if (clipBoxRight - scaledImageWidth/2 > x) {
-                x = clipBoxRight - scaledImageWidth/2
+            const xMax = clipBoxLeft + scaledImageWidth/2
+            const xMin = clipBoxRight - scaledImageWidth/2
+            if(xMax < x) {
+                x = xMax
             }
-            if (clipBoxTop + scaledImageHeight/2 < y) {
-                y = clipBoxTop + scaledImageHeight/2
+            else if (xMin> x) {
+                x = xMin
+            }
+
+            const yMax = clipBoxTop + scaledImageHeight/2
+            const yMin = clipBoxBottom - scaledImageHeight/2
+            if (yMax < y) {
+                y = yMax
             } 
-            else if (clipBoxBottom - scaledImageHeight/2 > y) {
-                y = clipBoxBottom - scaledImageHeight/2
+            else if (yMin > y) {
+                y = yMin
             }
 
             return { x, y }
@@ -528,9 +533,7 @@ export default {
         rotate() {
             this.angle = (this.angle - 90) % 360
             this.scale = this.limitImageScale()
-            const { x, y } = this.imageCenterPoint
-
-            this.imageCenterPoint = this.limitImageTranslate(x, y)
+            this.imageCenterPoint = this.limitImageTranslate()
         }
     },
 
