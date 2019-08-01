@@ -479,25 +479,23 @@ export default {
             this.canvasHeight = clipBoxHeight
 
             // 裁剪框左上角距离缩放后的图片的左上角的xy值
-            // const x = Math.round( (clipBoxLeft - scaledImageTranslateX) * exportIamgeScale )
-            // const y = Math.round( (clipBoxTop - scaledImageTranslateY) * exportIamgeScale )
+            const x = (imageCenterPoint.x - clipBoxLeft) * exportIamgeScale
+            const y = (imageCenterPoint.y - clipBoxTop) * exportIamgeScale
             const drawImageWidth = scaledImageWidth * exportIamgeScale
             const drawImageHeight = scaledImageHeight * exportIamgeScale
-
-            // this.canvasContext.rotate(angle * Math.PI / 180)
-            // this.canvasContext.drawImage(imageSrc, -x, -y, drawImageWidth, drawImageHeight)
-
-            var x = (imageWidth/2) * exportIamgeScale
-            var y = (imageHeight/2) * exportIamgeScale
+            
             this.canvasContext.translate(x, y)
             this.canvasContext.rotate(angle * Math.PI / 180)
-
             this.canvasContext.drawImage(imageSrc, -drawImageWidth/2, -drawImageHeight/2, drawImageWidth, drawImageHeight)
 
             this.canvasContext.draw(false, setTimeout(() => {
                 drawImageCallBack()
+                
+                // 清空画布，防止下一次渲染，背后会有上一次的结果
                 this.canvasContext.clearRect(-drawImageWidth/2, -drawImageHeight/2, drawImageWidth, drawImageHeight)
+                // rotate会叠加，所以需要旋转回原来的位置
                 this.canvasContext.rotate(-angle * Math.PI / 180)
+                // 同rotate translate也需要
                 this.canvasContext.translate(-x, -y)
             }, 500))
         },
