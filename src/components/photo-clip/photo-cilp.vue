@@ -470,7 +470,7 @@ export default {
         drawImage(drawImageCallBack) {
             const {
                 clipBoxLeft, clipBoxTop, clipBoxWidth, clipBoxHeight,
-                imageSrc, scaledImageWidth, scaledImageHeight,
+                imageSrc, imageCenterPoint, imageWidth, imageHeight, scaledImageWidth, scaledImageHeight,
                 scaledImageTranslateX, scaledImageTranslateY, exportIamgeScale,
                 angle
             } = this
@@ -479,17 +479,27 @@ export default {
             this.canvasHeight = clipBoxHeight
 
             // 裁剪框左上角距离缩放后的图片的左上角的xy值
-            const x = Math.round( (clipBoxLeft - scaledImageTranslateX) * exportIamgeScale )
-            const y = Math.round( (clipBoxTop - scaledImageTranslateY) * exportIamgeScale )
+            // const x = Math.round( (clipBoxLeft - scaledImageTranslateX) * exportIamgeScale )
+            // const y = Math.round( (clipBoxTop - scaledImageTranslateY) * exportIamgeScale )
             const drawImageWidth = scaledImageWidth * exportIamgeScale
             const drawImageHeight = scaledImageHeight * exportIamgeScale
 
+            // this.canvasContext.rotate(angle * Math.PI / 180)
+            // this.canvasContext.drawImage(imageSrc, -x, -y, drawImageWidth, drawImageHeight)
+
+            var x = (imageWidth/2) * exportIamgeScale
+            var y = (imageHeight/2) * exportIamgeScale
+            this.canvasContext.translate(x, y)
             this.canvasContext.rotate(angle * Math.PI / 180)
-            this.canvasContext.drawImage(imageSrc, -x, -y, drawImageWidth, drawImageHeight)
+
+            this.canvasContext.drawImage(imageSrc, -drawImageWidth/2, -drawImageHeight/2, drawImageWidth, drawImageHeight)
+
             this.canvasContext.draw(false, setTimeout(() => {
                 drawImageCallBack()
+                this.canvasContext.clearRect(-drawImageWidth/2, -drawImageHeight/2, drawImageWidth, drawImageHeight)
+                this.canvasContext.rotate(-angle * Math.PI / 180)
+                this.canvasContext.translate(-x, -y)
             }, 500))
-            // this.canvasContext.clearRect()
         },
 
         drawImageCallBack() {
