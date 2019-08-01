@@ -292,7 +292,8 @@ export default {
         },
 
         initCanvas() {
-            this.canvasContext = uni.createCanvasContext('image-cropper')
+            // this 兼容微信
+            this.canvasContext = uni.createCanvasContext('image-cropper', this)
         },
 
         imageTouchStart({touches}) {
@@ -534,25 +535,24 @@ export default {
             this.canvasWidth = clipBoxWidth
             this.canvasHeight = clipBoxHeight
 
-            // 裁剪框左上角距离缩放后的图片的左上角的xy值
+            // todo：把这块的注释写上
             const x = (imageCenterPoint.x - clipBoxLeft) * exportIamgeScale
             const y = (imageCenterPoint.y - clipBoxTop) * exportIamgeScale
             const drawImageWidth = scaledImageWidth * exportIamgeScale
             const drawImageHeight = scaledImageHeight * exportIamgeScale
             
+            // 保存当前canvas上下文
+            this.canvasContext.save()
             this.canvasContext.translate(x, y)
             this.canvasContext.rotate(angle * Math.PI / 180)
             this.canvasContext.drawImage(imageSrc, -drawImageWidth/2, -drawImageHeight/2, drawImageWidth, drawImageHeight)
 
             this.canvasContext.draw(false, setTimeout(() => {
                 drawImageCallBack()
-                
+                // 回到之前保存的canvas上下文
+                this.canvasContext.restore()
                 // 清空画布，防止下一次渲染，背后会有上一次的结果
                 this.canvasContext.clearRect(-drawImageWidth/2, -drawImageHeight/2, drawImageWidth, drawImageHeight)
-                // rotate会叠加，所以需要旋转回原来的位置
-                this.canvasContext.rotate(-angle * Math.PI / 180)
-                // 同rotate translate也需要
-                this.canvasContext.translate(-x, -y)
             }, 500))
         },
 
@@ -561,6 +561,7 @@ export default {
             const width = clipBoxWidth * exportIamgeScale
             const height = clipBoxHeight * exportIamgeScale
 
+            // this 兼容微信
             uni.canvasToTempFilePath({
                 width,
                 height,
@@ -573,9 +574,8 @@ export default {
                         current: res.tempFilePath,
                         urls: [res.tempFilePath]
                     })
-                    console.log(`生成图片url：${res.tempFilePath}`)
                 }
-            })
+            }, this)
         },
 
         // 以下用于父组件使用

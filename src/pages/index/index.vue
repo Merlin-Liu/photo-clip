@@ -1,6 +1,6 @@
 <template>
 	<view>
-		<view class="switch-box">
+		<view class="switch-box" v-if="imageSrc">
 			<view class="uni-list">
 				<view class="uni-list-cell uni-list-cell-pd">
 					<view class="uni-list-cell-db">限制图片在裁剪框内移动</view>
@@ -31,7 +31,8 @@
 
 		<photo-clip 
 			ref="photoClip"
-			:imageSrc="src"
+			v-if="imageSrc"
+			:imageSrc="imageSrc"
 			:needLimitImageMoveRange="needLimitImageMoveRange"
 			:needLockImageScale="needLockImageScale"
 			:needLockImageRotate="needLockImageRotate"
@@ -40,7 +41,15 @@
 			:needLockClipBoxRatio="needLockClipBoxRatio"
 		/>
 
-		<view class="operation-box">
+		<view class="upload-box" v-else>
+			<p>💯</p>
+			<p>小程序图片裁剪组件</p>
+			<p>目前支持微信和百度小程序</p>
+			<p>上传图片查看功能</p>
+			<button type="primary" @tap="uploadImage">点击上传图片</button>
+		</view>
+
+		<view class="operation-box" v-if="imageSrc">
 			<view class="btn-group">
 				<button @tap="rotate(-90)">左旋90</button>
 				<button @tap="rotate(90)">右旋90</button>
@@ -68,17 +77,33 @@ export default {
 	},
 
 	data: () => ({
+		imageSrc: '',
 		needLimitImageMoveRange: true,
 		needLockImageScale: false,
 		needLockImageRotate: false,
 		needLockClipBoxWidth: false,
 		needLockClipBoxHeight: false,
-		needLockClipBoxRatio: false,
-		
-		src: 'http://127.0.0.1:8199/program/6badf3df447b272ddf6b2d8bb9e96ba2/devices/baiduboxapp-6badf3df447b272ddf6b2d8bb9e96ba2-0/tmp/156421328568779.jpeg'
+		needLockClipBoxRatio: false,		
 	}),
 
 	methods: {
+		uploadImage() {
+			uni.chooseImage({
+				count: 1,
+				success: res => {
+					const result = res.tempFilePaths[0]
+					// 微信
+					if (typeof result === 'string') {
+						this.imageSrc = result
+					}
+					// 百度
+					else {
+						this.imageSrc = result.path
+					}
+				}
+			})
+		},
+
 		// switch change event
 		needLimitImageMoveRangeChange ({detail: { value }}) {
 			this.needLimitImageMoveRange = value
@@ -137,12 +162,18 @@ export default {
 </script>
 
 <style lang="scss">
+.upload-box {
+	margin: 80px 10px;
+	text-align: center;
+}
+
 .operation-box {
-	position: absolute;
+	position: fixed;
 	bottom: 0;
 	left: 0;
 	right: 0;
 	z-index: 100;
+	-webkit-transform: translateZ(0);
 	.btn-group {
 		width: 100%;
 		display: flex;
@@ -159,7 +190,7 @@ export default {
 }
 
 .switch-box {
-	position: absolute;
+	position: fixed;
 	top: 0;
 	left: 0;
 	right: 0;
