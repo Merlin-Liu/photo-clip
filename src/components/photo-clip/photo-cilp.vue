@@ -114,6 +114,26 @@ export default {
         needLimitImageMoveRange: {
             type: Boolean,
             default: true
+        },
+        // 锁定裁剪框比例
+        needLockClipBoxRatio: {
+            type: Boolean,
+            default: false
+        },
+        // 锁定裁剪框宽
+        needLockClipBoxWidth: {
+            type: Boolean,
+            default: false
+        },
+        // 锁定裁剪框高
+        needLockClipBoxHeight: {
+            type: Boolean,
+            default: false
+        },
+        // 禁止图片旋转
+        needLockImageScale: {
+            type: Boolean,
+            default: false
         }
     },
 
@@ -352,40 +372,49 @@ export default {
             if (!this.clipBoxTouchStartPosition.touchPoint) return
 
             const [{ clientX, clientY }] = touches
-            const { x, y, touchPoint, left, top, width, height } = this.clipBoxTouchStartPosition
+            let { clipBoxWidth, clipBoxHeight, clipBoxLeft, clipBoxTop, needLockClipBoxWidth, needLockClipBoxHeight } = this
+            let { x, y, touchPoint, left, top, width, height } = this.clipBoxTouchStartPosition
 
             const deltaX = clientX - x
             const deltaY = clientY - y
 
             if (touchPoint === 'leftTop') {
-                this.clipBoxWidth = width - deltaX
-                this.clipBoxHeight = height - deltaY
+                clipBoxWidth = width - deltaX
+                clipBoxHeight = height - deltaY
 
                 // 裁剪框宽高增加，则裁剪框left、top则减小，反之同理
-                this.clipBoxLeft = left + deltaX
-                this.clipBoxTop = top + deltaY
+                clipBoxLeft = left + deltaX
+                clipBoxTop = top + deltaY
             }
             if (touchPoint === 'rightTop') {
-                this.clipBoxWidth = width + deltaX
-                this.clipBoxHeight = height - deltaY
+                clipBoxWidth = width + deltaX
+                clipBoxHeight = height - deltaY
 
-                this.clipBoxTop = top + deltaY
+                clipBoxTop = top + deltaY
             }
             if (touchPoint === 'leftBottom') {
-                this.clipBoxWidth = width - deltaX
-                this.clipBoxHeight = height + deltaY
+                clipBoxWidth = width - deltaX
+                clipBoxHeight = height + deltaY
 
-                this.clipBoxLeft = left + deltaX
+                clipBoxLeft = left + deltaX
             }
             if (touchPoint === 'rightBottom') {
-                this.clipBoxWidth = width + deltaX
-                this.clipBoxHeight = height + deltaY
+                clipBoxWidth = width + deltaX
+                clipBoxHeight = height + deltaY
+            }
+
+            if (!needLockClipBoxWidth) {
+                this.clipBoxWidth = clipBoxWidth
+                this.clipBoxLeft = clipBoxLeft
+            }
+            if (!needLockClipBoxHeight) {
+                this.clipBoxHeight = clipBoxHeight
+                this.clipBoxTop = clipBoxTop
             }
 
             if (this.needLimitImageMoveRange) {
-                // 1
+                // 先后顺序不能变
                 this.limitImageScale()
-                // 2 先后顺序不能变
                 this.limitImagePosition()
             }
         },
@@ -394,16 +423,18 @@ export default {
             this.FORBID_IAMGE_TOUCH = false
         },
 
-        limitImageScale() {
-            let { clipBoxWidth, clipBoxHeight, imageWidth, imageHeight, scaledImageWidth, scaledImageHeight, scale, angle } = this
+        limitImageScale(scale) {
+            let { clipBoxWidth, clipBoxHeight, imageWidth, imageHeight, angle } = this
+
+            if (scale === undefined) scale = this.scale
 
             if (Math.abs((angle / 90) % 2) === 1) {
                 imageWidth = imageHeight
                 imageHeight = this.imageWidth
-
-                scaledImageWidth = scaledImageHeight
-                scaledImageHeight = this.scaledImageWidth
             }
+
+            const scaledImageWidth = imageWidth * scale
+            const scaledImageHeight = imageHeight * scale
 
             if (scaledImageWidth < clipBoxWidth) {
                 scale = clipBoxWidth / imageWidth
@@ -524,19 +555,30 @@ export default {
 
         // 以下用于父组件使用
         moveV(direction) {
-            this.imageTranslateX += (direction === 'left') ? -3 : 3
+            let x = this.imageCenterPoint.x + (direction === 'left' ? -3 : 3)
+            if (this.needLimitImageMoveRange) {
+                this.limitImagePosition(x)
+            }
         },
 
         moveH(direction) {
-            this.imageTranslateY += (direction === 'up') ? -3 : 3
+            let y = this.imageCenterPoint.y + (direction === 'up' ? -3 : 3)
+            if (this.needLimitImageMoveRange) {
+                this.limitImagePosition(undefined, y)
+            }
         },
 
         scaling(opeation) {
-            this.scale += (opeation === 'enlarge') ? 0.02 : -0.02
+            if (this.needLockImageScale) return
+
+            let scale = this.scale + (opeation === 'enlarge' ? 0.02 : -0.02)
+            if (this.needLimitImageMoveRange) {
+                this.limitImageScale(scale)
+            }
         },
 
-        rotate() {
-            this.angle = (this.angle - 90) % 360
+        rotate(deg) {
+            this.angle = (this.angle + deg) % 360
             this.limitImageScale()
             this.limitImagePosition()
         }
