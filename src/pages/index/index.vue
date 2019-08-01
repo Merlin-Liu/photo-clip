@@ -1,6 +1,6 @@
 <template>
 	<view>
-		<view class="switch-box" v-if="imageSrc">
+		<view class="switch-box" v-if="showCliper">
 			<view class="uni-list">
 				<view class="uni-list-cell uni-list-cell-pd">
 					<view class="uni-list-cell-db">限制图片在裁剪框内移动</view>
@@ -31,7 +31,7 @@
 
 		<photo-clip 
 			ref="photoClip"
-			v-if="imageSrc"
+			:show="showCliper"
 			:imageSrc="imageSrc"
 			:needLimitImageMoveRange="needLimitImageMoveRange"
 			:needLockImageScale="needLockImageScale"
@@ -39,9 +39,10 @@
 			:needLockClipBoxWidth="needLockClipBoxWidth"
 			:needLockClipBoxHeight="needLockClipBoxHeight"
 			:needLockClipBoxRatio="needLockClipBoxRatio"
+			@completed="cliperLoadComplet"
 		/>
 
-		<view class="upload-box" v-else>
+		<view class="upload-box" v-if="!showCliper">
 			<p>💯</p>
 			<p>小程序图片裁剪组件</p>
 			<p>目前支持微信和百度小程序</p>
@@ -49,7 +50,7 @@
 			<button type="primary" @tap="uploadImage">点击上传图片</button>
 		</view>
 
-		<view class="operation-box" v-if="imageSrc">
+		<view class="operation-box" v-if="showCliper">
 			<view class="btn-group">
 				<button @tap="rotate(-90)">左旋90</button>
 				<button @tap="rotate(90)">右旋90</button>
@@ -83,7 +84,9 @@ export default {
 		needLockImageRotate: false,
 		needLockClipBoxWidth: false,
 		needLockClipBoxHeight: false,
-		needLockClipBoxRatio: false,		
+		needLockClipBoxRatio: false,
+		
+		showCliper: false
 	}),
 
 	methods: {
@@ -91,6 +94,7 @@ export default {
 			uni.chooseImage({
 				count: 1,
 				success: res => {
+					uni.showLoading({title: 'loading'})
 					const result = res.tempFilePaths[0]
 					// 微信
 					if (typeof result === 'string') {
@@ -102,6 +106,13 @@ export default {
 					}
 				}
 			})
+		},
+
+		cliperLoadComplet() {
+			setTimeout(() => {
+				this.showCliper = true
+				uni.hideLoading()
+			}, 1000)
 		},
 
 		// switch change event

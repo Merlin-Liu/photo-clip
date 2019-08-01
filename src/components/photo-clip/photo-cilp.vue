@@ -1,5 +1,5 @@
 <template>
-    <view class="photo-cliper">
+    <view class="photo-cliper" :style="{display: show ? 'block' : 'none'}">
         <view class="photo-cliper-main" @touchstart="clipBoxTouchStart" @touchmove="clipBoxTouchMove" @touchend="clipBoxTouchEnd" @tap="previewImage">
             <view class="photo-cliper-content">
                 <view class="clip-box-top shallow-background" :style="{height: `${clipBoxTop}px`}"></view>
@@ -80,6 +80,10 @@ export default {
     },
 
     props: {
+        show: {
+            type: Boolean,
+            default: false
+        },
         imageSrc: {
             type: String
         },
@@ -220,12 +224,17 @@ export default {
     },
 
     watch: {
+        imageSrc() {
+            this.initImage()
+        },
+
         needLimitImageMoveRange(val) {
             if (val) {
                 this.limitImageScale()
                 this.limitImagePosition()
             }
         },
+
         angle() {
             this.setClipBoxAndImageCenter()
         }
@@ -276,6 +285,8 @@ export default {
             if (this.needLimitImageMoveRange) {
                 this.limitImagePosition()
             }
+
+            this.$emit('completed')
         },
 
         setClipBoxAndImageCenter() {
@@ -613,7 +624,6 @@ export default {
 
     onReady () {
         this.initClipBox()
-        this.initImage()
         this.initCanvas()
     }
 }
