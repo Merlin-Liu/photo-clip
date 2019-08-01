@@ -31,10 +31,12 @@
                 :style="{
                     width: `${imageWidth}px`,
                     height: `${imageHeight}px`,
-                    transform: `translate3d(${imageTranslateX}px, ${imageTranslateY}px, 0) scale(${scale}) rotate(${angle}deg)`
+                    transform: `translate3d(${imageTranslateX}px, ${imageTranslateY}px, 0) scale(${scale}) rotate(${angle}deg)`,
+                    transitionDuration: FORBID_IMAGE_ADIMATION ? '0s' : '0.4s'
                 }"
                 @touchstart="imageTouchStart"
                 @touchmove="imageTouchMove"
+                @touchend="imageTouchEnd"
             ></image>
         </view>
         <canvas
@@ -72,7 +74,8 @@ export default {
 
             imageTouchStartPosition: [],
             clipBoxTouchStartPosition: {},
-            FORBID_IAMGE_TOUCH: false
+            FORBID_IMAGE_TOUCH: false,
+            FORBID_IMAGE_ADIMATION: false
         }
     },
 
@@ -130,8 +133,13 @@ export default {
             type: Boolean,
             default: false
         },
-        // 禁止图片旋转
+        // 禁止图片缩放
         needLockImageScale: {
+            type: Boolean,
+            default: false
+        },
+        // 禁止图片旋转
+        needLockImageRotate: {
             type: Boolean,
             default: false
         }
@@ -288,8 +296,9 @@ export default {
         },
 
         imageTouchStart({touches}) {
-            if (this.FORBID_IAMGE_TOUCH) return
+            if (this.FORBID_IMAGE_TOUCH) return
 
+            this.FORBID_IMAGE_ADIMATION = true
             // 单指拖动
             if (touches.length === 1) {
                 const [{ clientX: x, clientY: y }] = touches
@@ -307,7 +316,7 @@ export default {
         },
 
         imageTouchMove({touches}) {
-            if (this.FORBID_IAMGE_TOUCH) return
+            if (this.FORBID_IMAGE_TOUCH) return
 
             // 单指拖动
             if (touches.length === 1) {
@@ -328,6 +337,10 @@ export default {
             }
             // 双指放大
             else {}
+        },
+
+        imageTouchEnd() {
+            this.FORBID_IMAGE_ADIMATION = false
         },
 
         clipBoxTouchStart({touches}) {
@@ -364,7 +377,8 @@ export default {
                 height: this.clipBoxHeight 
             }
 
-            this.FORBID_IAMGE_TOUCH = true
+            this.FORBID_IMAGE_TOUCH = true
+            this.FORBID_IMAGE_ADIMATION = true
         },
 
         clipBoxTouchMove({touches}) {
@@ -372,12 +386,13 @@ export default {
             if (!this.clipBoxTouchStartPosition.touchPoint) return
 
             const [{ clientX, clientY }] = touches
-            let { clipBoxWidth, clipBoxHeight, clipBoxLeft, clipBoxTop, needLockClipBoxWidth, needLockClipBoxHeight } = this
+            let { clipBoxWidth, clipBoxHeight, clipBoxLeft, clipBoxTop, needLockClipBoxWidth, needLockClipBoxHeight, needLockClipBoxRatio } = this
             let { x, y, touchPoint, left, top, width, height } = this.clipBoxTouchStartPosition
 
             const deltaX = clientX - x
             const deltaY = clientY - y
 
+            // 点击裁剪框不同的区域，控制裁剪框的width、heigth、left、top
             if (touchPoint === 'leftTop') {
                 clipBoxWidth = width - deltaX
                 clipBoxHeight = height - deltaY
@@ -403,15 +418,24 @@ export default {
                 clipBoxHeight = height + deltaY
             }
 
-            if (!needLockClipBoxWidth) {
+            // 锁定裁剪框宽高比
+            if (needLockClipBoxRatio) {
+                const ratio = this.clipBoxWidth / this.clipBoxHeight
+                clipBoxHeight = clipBoxWidth / ratio
+            }
+
+            // 锁定裁剪框宽度
+            if (!needLockClipBoxWidth || needLockClipBoxRatio) {
                 this.clipBoxWidth = clipBoxWidth
                 this.clipBoxLeft = clipBoxLeft
             }
-            if (!needLockClipBoxHeight) {
+            // 锁定裁剪框高度
+            if (!needLockClipBoxHeight || needLockClipBoxRatio) {
                 this.clipBoxHeight = clipBoxHeight
                 this.clipBoxTop = clipBoxTop
             }
 
+            // 限制图片在裁剪框范围内拖动
             if (this.needLimitImageMoveRange) {
                 // 先后顺序不能变
                 this.limitImageScale()
@@ -420,7 +444,8 @@ export default {
         },
 
         clipBoxTouchEnd() {
-            this.FORBID_IAMGE_TOUCH = false
+            this.FORBID_IMAGE_TOUCH = false
+            this.FORBID_IMAGE_ADIMATION = false
         },
 
         limitImageScale(scale) {
@@ -578,6 +603,8 @@ export default {
         },
 
         rotate(deg) {
+            if (this.needLockImageRotate) return
+
             this.angle = (this.angle + deg) % 360
             this.limitImageScale()
             this.limitImagePosition()
@@ -647,6 +674,7 @@ export default {
             width: 400px;
             height: 400px;
             z-index: 10;
+            transition-duration: .4s;
             backface-visibility: hidden;
             transform-origin:center;
         }

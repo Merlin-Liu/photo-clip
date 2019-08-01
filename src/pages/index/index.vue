@@ -11,6 +11,10 @@
 					<switch @change="needLockImageScaleChange"/>
 				</view>
 				<view class="uni-list-cell uni-list-cell-pd">
+					<view class="uni-list-cell-db">禁止图片旋转</view>
+					<switch @change="needLockImageRotateChange"/>
+				</view>
+				<view class="uni-list-cell uni-list-cell-pd">
 					<view class="uni-list-cell-db">锁定裁剪框宽度</view>
 					<switch @change="needLockClipBoxWidthChange"/>
 				</view>
@@ -30,6 +34,7 @@
 			:imageSrc="src"
 			:needLimitImageMoveRange="needLimitImageMoveRange"
 			:needLockImageScale="needLockImageScale"
+			:needLockImageRotate="needLockImageRotate"
 			:needLockClipBoxWidth="needLockClipBoxWidth"
 			:needLockClipBoxHeight="needLockClipBoxHeight"
 			:needLockClipBoxRatio="needLockClipBoxRatio"
@@ -65,9 +70,10 @@ export default {
 	data: () => ({
 		needLimitImageMoveRange: true,
 		needLockImageScale: false,
+		needLockImageRotate: false,
 		needLockClipBoxWidth: false,
 		needLockClipBoxHeight: false,
-		needLockImageScale: false,
+		needLockClipBoxRatio: false,
 		
 		src: 'http://127.0.0.1:8199/program/6badf3df447b272ddf6b2d8bb9e96ba2/devices/baiduboxapp-6badf3df447b272ddf6b2d8bb9e96ba2-0/tmp/156421328568779.jpeg'
 	}),
@@ -80,6 +86,10 @@ export default {
 
 		needLockImageScaleChange ({detail: { value }}) {
 			this.needLockImageScale = value
+		},
+
+		needLockImageRotateChange ({detail: { value }}) {
+			this.needLockImageRotate = value
 		},
 
 		needLockClipBoxWidthChange ({detail: { value }}) {
