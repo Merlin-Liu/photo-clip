@@ -15,8 +15,8 @@
 
 代码都是uni-app编译后的，拿到对应平台的代码，不同平台使用方式不同
 
-[微信小程序代码](/output)
-[百度小程序代码](/output)
+[微信小程序代码](/output/baidu/photo-clip)
+[百度小程序代码](/output/weixin/photo-clip)
 
 ## Props
 
