@@ -3,8 +3,8 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "Photo Clip",
-				"navigationBarBackgroundColor": "#007CFA"
+				"navigationBarTitleText": "Photo Cliper",
+				"navigationBarBackgroundColor": "#F8F8F8"
 			}
 		}
 	],
