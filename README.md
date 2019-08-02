@@ -11,6 +11,13 @@
 * 基于uni-app
 * 使用Vue语法，可扩展到Vue项目
 
+## 源码
+
+代码都是uni-app编译后的，拿到对应平台的代码，不同平台使用方式不同
+
+[微信小程序代码](/output)
+[百度小程序代码](/output)
+
 ## Props
 
 | props | type | default | desc | require |
