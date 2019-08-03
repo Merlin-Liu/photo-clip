@@ -3,7 +3,7 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "Photo Cliper",
+				"navigationBarTitleText": "LiuCliper",
 				"navigationBarBackgroundColor": "#F8F8F8"
 			}
 		}

@@ -1,33 +1,35 @@
 <template>
 	<view>
-		<view class="switch-box" v-if="showCliper">
-			<view class="uni-list">
-				<view class="uni-list-cell uni-list-cell-pd">
-					<view class="uni-list-cell-db">限制图片在裁剪框内移动</view>
-					<switch checked @change="needLimitImageMoveRangeChange"/>
+		<uni-collapse class="switch-box" v-if="showCliper">
+			<uni-collapse-item title="限制裁剪操作">
+				<view class="uni-list">
+					<view class="uni-list-cell uni-list-cell-pd">
+						<view class="uni-list-cell-db">限制图片在裁剪框内移动</view>
+						<switch checked @change="needLimitImageMoveRangeChange"/>
+					</view>
+					<view class="uni-list-cell uni-list-cell-pd">
+						<view class="uni-list-cell-db">禁止图片缩放</view>
+						<switch @change="needLockImageScaleChange"/>
+					</view>
+					<view class="uni-list-cell uni-list-cell-pd">
+						<view class="uni-list-cell-db">禁止图片旋转</view>
+						<switch @change="needLockImageRotateChange"/>
+					</view>
+					<view class="uni-list-cell uni-list-cell-pd">
+						<view class="uni-list-cell-db">锁定裁剪框宽度</view>
+						<switch @change="needLockClipBoxWidthChange"/>
+					</view>
+					<view class="uni-list-cell uni-list-cell-pd">
+						<view class="uni-list-cell-db">锁定裁剪框高度</view>
+						<switch @change="needLockClipBoxHeightChange"/>
+					</view>
+					<view class="uni-list-cell uni-list-cell-pd">
+						<view class="uni-list-cell-db">锁定裁剪框比例</view>
+						<switch @change="needLockClipBoxRatioChange"/>
+					</view>
 				</view>
-				<view class="uni-list-cell uni-list-cell-pd">
-					<view class="uni-list-cell-db">禁止图片缩放</view>
-					<switch @change="needLockImageScaleChange"/>
-				</view>
-				<view class="uni-list-cell uni-list-cell-pd">
-					<view class="uni-list-cell-db">禁止图片旋转</view>
-					<switch @change="needLockImageRotateChange"/>
-				</view>
-				<view class="uni-list-cell uni-list-cell-pd">
-					<view class="uni-list-cell-db">锁定裁剪框宽度</view>
-					<switch @change="needLockClipBoxWidthChange"/>
-				</view>
-				<view class="uni-list-cell uni-list-cell-pd">
-					<view class="uni-list-cell-db">锁定裁剪框高度</view>
-					<switch @change="needLockClipBoxHeightChange"/>
-				</view>
-				<view class="uni-list-cell uni-list-cell-pd">
-					<view class="uni-list-cell-db">锁定裁剪框比例</view>
-					<switch @change="needLockClipBoxRatioChange"/>
-				</view>
-			</view>
-		</view>
+			</uni-collapse-item>
+		</uni-collapse>
 
 		<photo-clip 
 			ref="photoClip"
@@ -65,16 +67,20 @@
 				<button @tap="moveRight">右</button>
 				<button @tap="narrow">缩小</button>
 			</view>
+			<button @tap="back">返回</button>
 		</view>
 	</view>
 </template>
 
 <script>
+import { uniCollapse, uniCollapseItem } from '@dcloudio/uni-ui'
 import photoClip from '../../components/photo-clip/photo-cilp'
 
 export default {
 	components: {
-		photoClip
+		photoClip,
+		uniCollapse,
+		uniCollapseItem
 	},
 
 	data: () => ({
@@ -113,6 +119,11 @@ export default {
 				this.showCliper = true
 				uni.hideLoading()
 			}, 1000)
+		},
+
+		back() {
+			this.imageSrc = ''
+			this.showCliper = false
 		},
 
 		// switch change event
@@ -198,6 +209,14 @@ export default {
 			margin: 8rpx 4rpx;
 		}
 	}
+	> button {
+		font-size: 27rpx;
+		padding: 0 20rpx;
+		height: 60rpx;
+		min-width: 70rpx;
+		margin: 8rpx 4rpx;
+		margin-top: 0;
+	}
 }
 
 .switch-box {
@@ -206,6 +225,14 @@ export default {
 	left: 0;
 	right: 0;
 	z-index: 100;
+
+	.uni-collapse {
+		background-color: rgba(0, 0, 0, 0);
+		color: #fff;
+		.uni-collapse-cell__content, .uni-collapse-cell--open, .uni-collapse-cell--hover {
+			background-color: rgba(0, 0, 0, 0);
+		}
+	}
 }
 
 // list

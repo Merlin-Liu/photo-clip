@@ -29,6 +29,7 @@
     "@dcloudio/uni-mp-qq": "*",
     "@dcloudio/uni-mp-toutiao": "*",
     "@dcloudio/uni-mp-weixin": "*",
+    "@dcloudio/uni-ui": "^1.0.0",
     "flyio": "^0.6.2",
     "regenerator-runtime": "^0.12.1",
     "vue": "^2.6.10",
